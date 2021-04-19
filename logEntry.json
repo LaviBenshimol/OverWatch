@@ -1,0 +1,37 @@
+{
+    "eventVersion": "1.08",
+    "userIdentity": {
+        "type": "AWSService",
+        "invokedBy": "apigateway.amazonaws.com"
+    },
+    "eventTime": "2021-04-18T12:36:45Z",
+    "eventSource": "lambda.amazonaws.com",
+    "eventName": "Invoke",
+    "awsRegion": "eu-central-1",
+    "sourceIPAddress": "apigateway.amazonaws.com",
+    "userAgent": "apigateway.amazonaws.com",
+    "requestParameters": {
+        "functionName": "arn:aws:lambda:eu-central-1:696714140038:function:api-response-lambda",
+        "sourceArn": "arn:aws:execute-api:eu-central-1:696714140038:71q15gisae/test/GET/test-resource",
+        "contentType": "application/json"
+    },
+    "responseElements": null,
+    "additionalEventData": {
+        "functionVersion": "arn:aws:lambda:eu-central-1:696714140038:function:api-response-lambda:$LATEST"
+    },
+    "requestID": "c328127f-f288-493f-a4b0-5e63787d4444",
+    "eventID": "e17f9ee5-2e31-46f6-8288-3c217f31ee1e",
+    "readOnly": false,
+    "resources": [
+        {
+            "accountId": "696714140038",
+            "type": "AWS::Lambda::Function",
+            "ARN": "arn:aws:lambda:eu-central-1:696714140038:function:api-response-lambda"
+        }
+    ],
+    "eventType": "AwsApiCall",
+    "managementEvent": false,
+    "recipientAccountId": "696714140038",
+    "sharedEventID": "cbf2c46b-cf9d-4622-8bff-9bde412bdbf6",
+    "eventCategory": "Data"
+}

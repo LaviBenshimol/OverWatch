@@ -1,7 +1,11 @@
-import json
 from neo4j import __version__ as neo4j_version, GraphDatabase
 from pandas import DataFrame
 from py2neo import Graph, Node, Relationship, NodeMatcher
+import pandas as pd
+import json
+import os
+import gzip
+from os.path import join, getsize
 
 
 ###############################################################################################
@@ -113,7 +117,7 @@ def user_identity_parser(data_base_connection, entity_name, entity_type, arn, re
 def event_source_parser(data_base_connection, entity_source_name, arn, region):
     if not node_exist(data_base_connection, entity_source_name):
         return
-    entity_type = "AWSService"              #TODO: how to figure out its entity type ? what label to put? to update?
+    entity_type = "AWSService"  # TODO: how to figure out its entity type ? what label to put? to update?
     query_enter_identity = f"""
         CREATE (n:{str(entity_type)} {{name: '{str(entity_source_name)}', arn: '{str(arn)}, region: {str(region)}'}})
         """
@@ -123,13 +127,13 @@ def event_source_parser(data_base_connection, entity_source_name, arn, region):
 
 
 def link_parser(data_base_connection, entity_name, entity_source_name, event_type, timestamp, source_ip, user_agent):
-    #TODO:retrive type ?
+    # TODO:retrive type ?
     entity_type = "AWSService"
     time_stamp = timestamp
     if event_type == "AwsApiCall":
-        reltype='AWS_API_CALL'
+        reltype = 'AWS_API_CALL'
     else:
-        reltype='MANAGEMENT'
+        reltype = 'MANAGEMENT'
 
     query_enter_identity = f"""
     MATCH (a:{entity_type}),(b:{entity_type})
@@ -138,9 +142,9 @@ def link_parser(data_base_connection, entity_name, entity_source_name, event_typ
     SET relation = {{Attributes:['{str(source_ip)}','{str(user_agent)}','{str(time_stamp)}']}}
     """
     # SET relation = {{properties:[{str(time_stamp)},{str(source_ip).replace(".","--")},{str(user_agent).replace(".","--")}]}}
-    #time: [{str(time_stamp)}],
-    #srcIP: [{str(source_ip).replace(":","--")}],
-    #user_agent:[{user_agent.replace(":","--")}]}}]->(b)
+    # time: [{str(time_stamp)}],
+    # srcIP: [{str(source_ip).replace(":","--")}],
+    # user_agent:[{user_agent.replace(":","--")}]}}]->(b)
     # RETURN type(r)
 
     # (MATCH(Service:{str(entity_source_name)}) -
@@ -177,43 +181,80 @@ def print_nodes(data_base_connection):
     """
     nodes = data_base_connection.query(print_all_nodes_query, db='overwatchDataBase')
     print("nodes:\n")
-    print(str(nodes).replace(", ","\n"))
+    print(str(nodes).replace(", ", "\n"))
     print("\n")
     return
 
 
 # Defining main function
 def main():
-    print("Connecting to neo4j DB...")
-    data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
-    print("Connected")
+    a = 0
+    dfs = []
+    print("hello world")
+    # C:\Users\lavi1\PycharmProjects\OverWatch\logFolder\AWSLogs\696714140038\CloudTrail\ca - central - 1\2021
+    for root, dirs, files in os.walk("logFolder\\AWSLogs\\696714140038\\CloudTrail\\eu-central-1\\2021", topdown=False):
+        # checking stoper
+        for filename in files:
+            logpath = os.path.basename(filename)
+            pathroot = root
+            print(logpath)
+            with gzip.open(join(root, filename), "rb") as f:
+                data = json.loads(f.read().decode('utf-8'))
+            df = pd.DataFrame(data['Records'])
+            dfs.append(df)
+            # print(os.path.join(root, filename))
+        # for dirname in dirs:
+        #     print(os.path.join(root, dirname))
 
-    show_me_the_databases = f"""
-    SHOW
-    DATABASES
-    """
-    ans = data_base_connection.query(query=show_me_the_databases, db="neo4j")
-    print("show database Before: CREATE OR REPLACE \n" + str(ans))
+        # for name in files:
+        #     with gzip.open(os.path.join(root, name), "r") as f:
+        #         data = f.read()
+        #         j = json.loads(data.decode('utf-8'))
+        #
+        #     a = a + 1
+        #     if a > 9:
+        #         break
 
-    data_base_connection.query("CREATE OR REPLACE DATABASE overwatchDataBase")
-    ans = data_base_connection.query(query=show_me_the_databases, db="overwatchDataBase")
-    print("show database After: CREATE OR REPLACE \n" + str(ans))
-    print("\n")
-    print("Taxonomy for 1 log entry")
-    # graph = Graph("bolt://localhost:7687", auth=("superman", "pizza"))
+    # x = 1
+    # x = 1 + 1
+    # data = json.load(open('logFile.json'))
 
-    with open("logEntry.json", "r") as read_file:
-        data = json.load(read_file)
-    test = data['requestParameters']['sourceArn'].partition(":")[2]
-    test = f"""{test}"""
-    test.replace(":", "--")
-    # print(test)
-    print("Before taxonomy layer")
-    print_nodes(data_base_connection)
-    taxonomy_layer(data, data_base_connection)
-    print("After taxonomy layer")
-    print_nodes(data_base_connection)
-    print("complete")
+    # files = os.listdict(path)
+
+    all_dfs = pd.concat(dfs)
+    all_dfs.to_csv("logsInTable.csv")
+
+    # x = 1 + 1
+    # print("Connecting to neo4j DB...")
+    # data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
+    # print("Connected")
+    # data = pd.read_json("logEntry.json")
+    # show_me_the_databases = f"""
+    # SHOW
+    # DATABASES
+    # """
+    # ans = data_base_connection.query(query=show_me_the_databases, db="neo4j")
+    # print("show database Before: CREATE OR REPLACE \n" + str(ans))
+    #
+    # data_base_connection.query("CREATE OR REPLACE DATABASE overwatchDataBase")
+    # ans = data_base_connection.query(query=show_me_the_databases, db="overwatchDataBase")
+    # print("show database After: CREATE OR REPLACE \n" + str(ans))
+    # print("\n")
+    # print("Taxonomy for 1 log entry")
+    # # graph = Graph("bolt://localhost:7687", auth=("superman", "pizza"))
+    #
+    # with open("logEntry.json", "r") as read_file:
+    #     data = json.load(read_file)
+    # test = data['requestParameters']['sourceArn'].partition(":")[2]
+    # test = f"""{test}"""
+    # test.replace(":", "--")
+    # # print(test)
+    # print("Before taxonomy layer")
+    # print_nodes(data_base_connection)
+    # taxonomy_layer(data, data_base_connection)
+    # print("After taxonomy layer")
+    # print_nodes(data_base_connection)
+    # print("complete")
     return
 
 

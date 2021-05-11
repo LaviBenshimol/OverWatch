@@ -186,14 +186,10 @@ def print_nodes(data_base_connection):
     return
 
 
-# Defining main function
-def main():
-    a = 0
+def create_CSV_with_logs(path_to_logs_folder):
     dfs = []
-    print("hello world")
     # C:\Users\lavi1\PycharmProjects\OverWatch\logFolder\AWSLogs\696714140038\CloudTrail\ca - central - 1\2021
-    for root, dirs, files in os.walk("logFolder\\AWSLogs\\696714140038\\CloudTrail\\eu-central-1\\2021", topdown=False):
-        # checking stoper
+    for root, dirs, files in os.walk(path_to_logs_folder, topdown=False):
         for filename in files:
             logpath = os.path.basename(filename)
             pathroot = root
@@ -202,59 +198,62 @@ def main():
                 data = json.loads(f.read().decode('utf-8'))
             df = pd.DataFrame(data['Records'])
             dfs.append(df)
-            # print(os.path.join(root, filename))
-        # for dirname in dirs:
-        #     print(os.path.join(root, dirname))
-
-        # for name in files:
-        #     with gzip.open(os.path.join(root, name), "r") as f:
-        #         data = f.read()
-        #         j = json.loads(data.decode('utf-8'))
-        #
-        #     a = a + 1
-        #     if a > 9:
-        #         break
-
-    # x = 1
-    # x = 1 + 1
-    # data = json.load(open('logFile.json'))
-
-    # files = os.listdict(path)
 
     all_dfs = pd.concat(dfs)
     all_dfs.to_csv("logsInTable.csv")
 
-    # x = 1 + 1
-    # print("Connecting to neo4j DB...")
-    # data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
-    # print("Connected")
-    # data = pd.read_json("logEntry.json")
-    # show_me_the_databases = f"""
-    # SHOW
-    # DATABASES
-    # """
-    # ans = data_base_connection.query(query=show_me_the_databases, db="neo4j")
-    # print("show database Before: CREATE OR REPLACE \n" + str(ans))
-    #
-    # data_base_connection.query("CREATE OR REPLACE DATABASE overwatchDataBase")
-    # ans = data_base_connection.query(query=show_me_the_databases, db="overwatchDataBase")
-    # print("show database After: CREATE OR REPLACE \n" + str(ans))
-    # print("\n")
-    # print("Taxonomy for 1 log entry")
-    # # graph = Graph("bolt://localhost:7687", auth=("superman", "pizza"))
-    #
-    # with open("logEntry.json", "r") as read_file:
-    #     data = json.load(read_file)
-    # test = data['requestParameters']['sourceArn'].partition(":")[2]
-    # test = f"""{test}"""
-    # test.replace(":", "--")
-    # # print(test)
-    # print("Before taxonomy layer")
-    # print_nodes(data_base_connection)
-    # taxonomy_layer(data, data_base_connection)
-    # print("After taxonomy layer")
-    # print_nodes(data_base_connection)
-    # print("complete")
+
+def print_all_files_names(path_to_logs_folder):
+    for root, dirs, files in os.walk(path_to_logs_folder, topdown=False):
+        for filename in files:
+            print(os.path.join(root, filename))
+        for dir_name in dirs:
+            print(os.path.join(root, dir_name))
+
+
+def insert_single_log_entry(log_name, data_base_connection):
+    show_me_the_databases = f"""
+       SHOW
+       DATABASES
+       """
+    ans = data_base_connection.query(query=show_me_the_databases, db="neo4j")
+    print("show database Before: CREATE OR REPLACE \n" + str(ans))
+
+    data_base_connection.query("CREATE OR REPLACE DATABASE overwatchDataBase")
+    ans = data_base_connection.query(query=show_me_the_databases, db="overwatchDataBase")
+    print("show database After: CREATE OR REPLACE \n" + str(ans))
+    print("\n")
+    print("Taxonomy for 1 log entry")
+    # graph = Graph("bolt://localhost:7687", auth=("superman", "pizza"))
+
+    with open(log_name, "r") as read_file:
+        data = json.load(read_file)
+    test = data['requestParameters']['sourceArn'].partition(":")[2]
+    test = f"""{test}"""
+    test.replace(":", "--")
+    # print(test)
+    print("Before taxonomy layer")
+    print_nodes(data_base_connection)
+    taxonomy_layer(data, data_base_connection)
+    print("After taxonomy layer")
+    print_nodes(data_base_connection)
+    print("complete")
+    return
+
+
+def main():
+
+    print("hello world")
+    path_to_logs = "logFolder\\AWSLogs\\696714140038\\CloudTrail\\eu-central-1\\2021"
+    # print_all_files_names(path_to_logs)
+    # create_CSV_with_logs(path_to_logs)
+
+    print("Connecting to neo4j DB...")
+    data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
+    print("Connected")
+
+    insert_single_log_entry("logEntry.json", data_base_connection)
+
     return
 
 

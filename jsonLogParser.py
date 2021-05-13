@@ -1,11 +1,13 @@
 from neo4j import __version__ as neo4j_version, GraphDatabase
-from py2neo import Graph, Node, Relationship, NodeMatcher
+from py2neo import Graph, Node, Relationship, NodeMatcher               #, authenticate
+from monotonic import monotonic
+# import py2neo
 import pandas as pd
 import json
 import os
 import gzip
 from os.path import join, getsize
-
+import boto3
 
 ###############################################################################################
 # START of working in neo4j
@@ -137,10 +139,11 @@ def event_source_parser(data_base_connection, entity_source_name, arn, region):
     return
 
 
-def link_parser(data_base_connection, arn_initiator, arn_actuator, entity_source_name, entity_name, event_type, timestamp, source_ip, user_agent):
+def link_parser(data_base_connection, arn_initiator, arn_actuator, entity_source_name, entity_name, event_type,
+                timestamp, source_ip, user_agent):
     # TODO:retrive type ?
-    arn_initiator=camel(arn_initiator)
-    arn_actuator=camel(arn_actuator)
+    arn_initiator = camel(arn_initiator)
+    arn_actuator = camel(arn_actuator)
     entity_type = "AWSService"
     time_stamp = timestamp
     if event_type == "AwsApiCall":
@@ -255,6 +258,26 @@ def insert_single_log_entry(log_name, data_base_connection):
     print("complete")
     return
 
+def get_db_client(dbhost, dbuser, dbpass, bolt=False):
+    """Return a Neo4j DB session. bolt=True uses bolt driver"""
+
+
+    print("DB Creds", dbhost, dbuser, dbpass)
+
+    if bolt:
+        bolt_url = "bolt://" + dbhost
+        auth_token = basic_auth(dbuser, dbpass)
+        try:
+            driver = GraphDatabase.driver(bolt_url, auth=auth_token, max_pool_size=5)
+            bolt_session = driver.session()
+            return bolt_session
+        except Exception as e:
+            print("Database connection/authentication error:", e)
+            sys.exit(1)
+    else:
+        login = "http://{0}:{1}@{2}:7474/db/data/".format(dbuser, dbpass, dbhost)
+        py2neo_session = Graph(login)
+        return py2neo_session
 
 def main():
     print("hello world")
@@ -262,11 +285,26 @@ def main():
     # print_all_files_names(path_to_logs)
     # create_CSV_with_logs(path_to_logs)
 
+
     print("Connecting to neo4j DB...")
-    data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
+    g = Graph("bolt://localhost:7687", auth=("neo4j", "1234"))
+    # set up authentication parameters
+    # authenticate("localhost:7687", "neo4j", "1234")
+
+    # connect to authenticated graph database
+    # s = Graph("http://localhost:7687/db/data/")
+    #TODO: create nodes using py2neo.
+    #   if node exist. add timestamp of usage.
+    #   else create a new one
+    #   create  connection.
+    #   if connection type exist - > (map of supported connection type)
+    #   add link. (self link is optional
+
+    # data_base_connection = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", pwd="1234")
+    # get_db_client(dbhost="localhost:7687", dbuser="neo4j", dbpass="1234", bolt=False)
     print("Connected")
 
-    insert_single_log_entry("logEntry.json", data_base_connection)
+    # insert_single_log_entry("logEntry.json", data_base_connection)
 
     return
 
